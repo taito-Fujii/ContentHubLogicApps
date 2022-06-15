@@ -60,20 +60,6 @@
         "description": "Location of the Logic App."
       }
     },
-    "servicebus_1_Connection_Name": {
-      "type": "string",
-      "defaultValue": "servicebus"
-    },
-    "servicebus_1_Connection_DisplayName": {
-      "type": "string",
-      "defaultValue": "ContentHubCMPBus"
-    },
-    "servicebus_1_connectionString": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Azure Service Bus Connection String"
-      }
-    },
     "servicebus_2_Connection_Name": {
       "type": "string",
       "defaultValue": "servicebus"
@@ -124,9 +110,9 @@
               "inputs": {
                 "variables": [
                   {
-                    "name": "token",
+                    "name": "apitoken",
                     "type": "string",
-                    "value": "@{triggerBody()['Properties']['token']}"
+                    "value": "@{triggerBody()['Properties']['apitoken']}"
                   }
                 ]
               },
@@ -142,7 +128,7 @@
                 "variables": [
                   {
                     "name": "imageurl",
-                    "type": "integer"
+                    "type": "string"
                   }
                 ]
               },
@@ -267,7 +253,7 @@
                 "uri": "@{variables('host_header')}api/entities/@{body('JSON_の解析')?['saveEntityMessage']?['TargetId']}",
                 "headers": {
                   "Content-Type": "application/json",
-                  "X-Auth-Token": "@variables('token')"
+                  "X-Auth-Token": "@variables('apitoken')"
                 }
               },
               "runAfter": {
@@ -513,7 +499,7 @@
                 "method": "POST",
                 "uri": "https://api.line.me/v2/bot/message/broadcast",
                 "headers": {
-                  "Authorization": "Bearer"
+                  "Authorization": "Bearer @{parameters('linetoken')}"
                 },
                 "body": {
                   "messages": [
@@ -535,6 +521,10 @@
             "$connections": {
               "defaultValue": {},
               "type": "Object"
+            },
+            "linetoken": {
+              "defaultValue": "<NEED TO UPDATE>",
+              "type": "String"
             }
           },
           "triggers": {
