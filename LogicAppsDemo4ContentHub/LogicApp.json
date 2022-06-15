@@ -62,13 +62,27 @@
     },
     "servicebus_1_Connection_Name": {
       "type": "string",
-      "defaultValue": "servicebus-6"
+      "defaultValue": "servicebus"
     },
     "servicebus_1_Connection_DisplayName": {
       "type": "string",
       "defaultValue": "ContentHubCMPBus"
     },
     "servicebus_1_connectionString": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure Service Bus Connection String"
+      }
+    },
+    "servicebus_2_Connection_Name": {
+      "type": "string",
+      "defaultValue": "servicebus"
+    },
+    "servicebus_2_Connection_DisplayName": {
+      "type": "string",
+      "defaultValue": "ch-service-bus"
+    },
+    "servicebus_2_connectionString": {
       "type": "securestring",
       "metadata": {
         "description": "Azure Service Bus Connection String"
@@ -83,7 +97,7 @@
       "location": "[parameters('PublishLINELocation')]",
       "apiVersion": "2016-06-01",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/connections', parameters('servicebus_1_Connection_Name'))]"
+        "[resourceId('Microsoft.Web/connections', parameters('servicebus_2_Connection_Name'))]"
       ],
       "tags": {
         "displayName": "PublishLINE"
@@ -104,6 +118,417 @@
                 ]
               },
               "runAfter": {}
+            },
+            "変数を初期化する_2": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "token",
+                    "type": "string",
+                    "value": "@{triggerBody()['Properties']['token']}"
+                  }
+                ]
+              },
+              "runAfter": {
+                "変数を初期化する": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "変数を初期化する_3": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "imageurl",
+                    "type": "integer"
+                  }
+                ]
+              },
+              "runAfter": {
+                "変数を初期化する_2": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "作成": {
+              "type": "Compose",
+              "inputs": "@base64ToString(triggerBody()?['ContentData'])",
+              "runAfter": {
+                "変数を初期化する_3": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "JSON_の解析": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@outputs('作成')",
+                "schema": {
+                  "properties": {
+                    "context": {
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "saveEntityMessage": {
+                      "properties": {
+                        "ChangeSet": {
+                          "properties": {
+                            "Cultures": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "PropertyChanges": {
+                              "type": "array"
+                            },
+                            "RelationChanges": {
+                              "items": {
+                                "properties": {
+                                  "Cardinality": {
+                                    "type": "integer"
+                                  },
+                                  "NewValues": {
+                                    "items": {
+                                      "type": "integer"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "Relation": {
+                                    "type": "string"
+                                  },
+                                  "RemovedValues": {
+                                    "items": {
+                                      "type": "integer"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "Role": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "Relation",
+                                  "Role",
+                                  "Cardinality",
+                                  "NewValues",
+                                  "RemovedValues"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "EventType": {
+                          "type": "string"
+                        },
+                        "IsNew": {
+                          "type": "boolean"
+                        },
+                        "TargetDefinition": {
+                          "type": "string"
+                        },
+                        "TargetId": {
+                          "type": "integer"
+                        },
+                        "TargetIdentifier": {
+                          "type": "string"
+                        },
+                        "TimeStamp": {
+                          "type": "string"
+                        },
+                        "UserId": {
+                          "type": "integer"
+                        },
+                        "Version": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "runAfter": {
+                "作成": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "HTTP": {
+              "type": "Http",
+              "inputs": {
+                "method": "GET",
+                "uri": "@{variables('host_header')}api/entities/@{body('JSON_の解析')?['saveEntityMessage']?['TargetId']}",
+                "headers": {
+                  "Content-Type": "application/json",
+                  "X-Auth-Token": "@variables('token')"
+                }
+              },
+              "runAfter": {
+                "JSON_の解析": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "JSON_の解析_2": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('HTTP')",
+                "schema": {
+                  "properties": {
+                    "created_by": {
+                      "properties": {
+                        "href": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "created_on": {
+                      "type": "string"
+                    },
+                    "cultures": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "entitydefinition": {
+                      "properties": {
+                        "href": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "identifier": {
+                      "type": "string"
+                    },
+                    "lifecycle": {
+                      "properties": {
+                        "href": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "modified_by": {
+                      "properties": {
+                        "href": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "modified_on": {
+                      "type": "string"
+                    },
+                    "properties": {
+                      "properties": {
+                        "Advertisement_Body": {},
+                        "Advertisement_Title": {},
+                        "Blog_Body": {},
+                        "Blog_Quote": {},
+                        "Blog_Title": {},
+                        "Content.ApprovedForCreation": {
+                          "type": "boolean"
+                        },
+                        "Content.Brief": {},
+                        "Content.ContentCompletenessStatus": {},
+                        "Content.ContentStoryPoints": {},
+                        "Content.ExpirationDate": {},
+                        "Content.Impact": {},
+                        "Content.IsInIdeationState": {},
+                        "Content.Name": {
+                          "type": "string"
+                        },
+                        "Content.NumberOfCreatedVersions": {
+                          "type": "integer"
+                        },
+                        "Content.PublicationDate": {},
+                        "Content.PublishedOn": {},
+                        "Content.StrategyCompletenessStatus": {},
+                        "Content.Variant": {},
+                        "Email_Body": {},
+                        "Email_Recipients": {},
+                        "Email_Sender": {},
+                        "Email_Subject": {},
+                        "LIne_Message": {
+                          "type": "string"
+                        },
+                        "M.Content.IsDraft": {},
+                        "M.Content.IsVariant": {},
+                        "MasterAssetIsContent": {},
+                        "PublishStatus": {},
+                        "PublishStatusDetails": {},
+                        "Recipe_Cookinginstructions": {},
+                        "Recipe_Ingredients": {},
+                        "Recipe_Nutritionalfacts": {},
+                        "Recipe_Title": {},
+                        "Renditions": {},
+                        "SocialMediaMessage_Body": {},
+                        "SocialMediaMessage_Footer": {},
+                        "Webinar_Description": {},
+                        "Webinar_Title": {},
+                        "WhitePaper_Body": {},
+                        "WhitePaper_Footer": {},
+                        "WhitePaper_Header": {},
+                        "WhitePaper_Title": {}
+                      },
+                      "type": "object"
+                    },
+                    "renditions": {
+                      "properties": {
+                        "downloadOriginal": {
+                          "items": {
+                            "properties": {
+                              "href": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "href"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "preview": {
+                          "items": {
+                            "properties": {
+                              "href": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "href"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "thumbnail": {
+                          "items": {
+                            "properties": {
+                              "href": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "href"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "saved_selections": {
+                      "properties": {
+                        "href": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "version": {
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "runAfter": {
+                "HTTP": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "For_each": {
+              "type": "Foreach",
+              "foreach": "@body('JSON_の解析_2')?['renditions']?['thumbnail']",
+              "actions": {
+                "JSON_の解析_3": {
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@items('For_each')",
+                    "schema": {
+                      "properties": {
+                        "href": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "変数の設定": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "imageurl",
+                    "value": "@body('JSON_の解析_3')?['href']"
+                  },
+                  "runAfter": {
+                    "JSON_の解析_3": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "JSON_の解析_2": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "HTTP_2": {
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "https://api.line.me/v2/bot/message/broadcast",
+                "headers": {
+                  "Authorization": "Bearer"
+                },
+                "body": {
+                  "messages": [
+                    {
+                      "type": "text",
+                      "text": "Hello, user!"
+                    }
+                  ]
+                }
+              },
+              "runAfter": {
+                "For_each": [
+                  "Succeeded"
+                ]
+              }
             }
           },
           "parameters": {
@@ -118,7 +543,7 @@
               "inputs": {
                 "host": {
                   "connection": {
-                    "name": "@parameters('$connections')['servicebus_2']['connectionId']"
+                    "name": "@parameters('$connections')['servicebus']['connectionId']"
                   }
                 },
                 "method": "get",
@@ -142,10 +567,10 @@
         "parameters": {
           "$connections": {
             "value": {
-              "servicebus_2": {
+              "servicebus": {
                 "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('PublishLINELocation'), '/managedApis/', 'servicebus')]",
-                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('servicebus_1_Connection_Name'))]",
-                "connectionName": "[parameters('servicebus_1_Connection_Name')]"
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('servicebus_2_Connection_Name'))]",
+                "connectionName": "[parameters('servicebus_2_Connection_Name')]"
               }
             }
           }
@@ -155,15 +580,15 @@
     {
       "type": "MICROSOFT.WEB/CONNECTIONS",
       "apiVersion": "2018-07-01-preview",
-      "name": "[parameters('servicebus_1_Connection_Name')]",
+      "name": "[parameters('servicebus_2_Connection_Name')]",
       "location": "[parameters('PublishLINELocation')]",
       "properties": {
         "api": {
           "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('PublishLINELocation'), '/managedApis/', 'servicebus')]"
         },
-        "displayName": "[parameters('servicebus_1_Connection_DisplayName')]",
+        "displayName": "[parameters('servicebus_2_Connection_DisplayName')]",
         "parameterValues": {
-          "connectionString": "[parameters('servicebus_1_connectionString')]"
+          "connectionString": "[parameters('servicebus_2_connectionString')]"
         }
       }
     }
