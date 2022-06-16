@@ -505,7 +505,7 @@
                   "messages": [
                     {
                       "type": "text",
-                      "text": "Hello, user!"
+                      "text": "@{body('JSON_の解析_2')?['properties']?['LIne_Message']}"
                     }
                   ]
                 }
